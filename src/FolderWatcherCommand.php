@@ -7,7 +7,7 @@ use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
 /**
- * @SuppressWarnings(PHPMD.Design/WeightedMethodCount)
+ * @SuppressWarnings(PHPMD.WeightedMethodCount)
  */
 class FolderWatcherCommand extends Command
 {
@@ -118,7 +118,7 @@ class FolderWatcherCommand extends Command
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.Design/ExitExpression)
+     * @SuppressWarnings(PHPMD.ExitExpression)
      */
     private function requireArguments($action, ...$options)
     {
@@ -394,7 +394,7 @@ class FolderWatcherCommand extends Command
      * @return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.Design/NpathComplexity)
+     * @SuppressWarnings(PHPMD.NpathComplexity)
      */
     private function processEvent($event_detail)
     {
@@ -484,7 +484,7 @@ class FolderWatcherCommand extends Command
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.CleanCode/BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     private function addWatchPath($original_path, $options = false)
     {
@@ -549,7 +549,7 @@ class FolderWatcherCommand extends Command
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.CleanCode/BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public static function scan($scan_path, $include_folders = true, $include_files = true, $depth = -1)
@@ -678,7 +678,7 @@ class FolderWatcherCommand extends Command
      *
      * @return array
      *
-     * @SuppressWarnings(PHPMD.Design/ExitExpression)
+     * @SuppressWarnings(PHPMD.ExitExpression)
      */
     private function getProcessList()
     {
@@ -733,7 +733,7 @@ class FolderWatcherCommand extends Command
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.CleanCode/BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     private function addLog($text, $pid = 0)
     {
