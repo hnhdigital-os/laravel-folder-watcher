@@ -117,7 +117,7 @@ class FolderWatcherCommand extends Command
      */
     private function requireArguments($action, ...$options)
     {
-        foreach ($options as $count => $name) {
+        foreach ($options as $name) {
             if (empty($this->option($name))) {
                 $this->line('');
                 $this->error(sprintf('%s requires %s options. Missing value for %s.', ucfirst($action), count($options), $name));
@@ -198,9 +198,9 @@ class FolderWatcherCommand extends Command
         $command_hash = hash('sha256', $binary.' '.$script_arguments);
 
         if (!isset($data[$command_hash])) {
-            $op = [];
-            exec($complete_command = sprintf('nohup php artisan watcher run --watch-path=%s --binary=%s --script-arguments="%s" > /dev/null 2>&1 & echo $!', $directory_path, $binary, $script_arguments, $command_hash), $op);
-            $pid = (int) $op[0];
+            $process_output = [];
+            exec($complete_command = sprintf('nohup php artisan watcher run --watch-path=%s --binary=%s --script-arguments="%s" > /dev/null 2>&1 & echo $!', $directory_path, $binary, $script_arguments, $command_hash), $process_output);
+            $pid = (int) $process_output[0];
             $this->addLog($complete_command, $pid);
 
             if ($pid > 0) {
@@ -314,16 +314,16 @@ class FolderWatcherCommand extends Command
                 continue;
             }
 
-            $fh = fopen($log_path, 'r');
-            fseek($fh, $size);
+            $file_handle = fopen($log_path, 'r');
+            fseek($file_handle, $size);
 
-            while ($line = fgets($fh)) {
+            while ($line = fgets($file_handle)) {
                 if ($pid === 'all' || stripos($line, '<'.$pid.'>') !== false) {
                     $this->line(trim($line));
                 }
             }
 
-            fclose($fh);
+            fclose($file_handle);
             $size = $current_size;
         }
     }
@@ -340,7 +340,7 @@ class FolderWatcherCommand extends Command
         $data = $this->getProcessList();
 
         if ($pid === 'all') {
-            foreach ($data as $pid => $process) {
+            foreach (array_keys($data) as $pid) {
                 if (is_int($pid)) {
                     $this->killProcess($pid);
                 }
@@ -549,7 +549,7 @@ class FolderWatcherCommand extends Command
 
         $contents = scandir($scan_path);
 
-        foreach ($contents as $key => $value) {
+        foreach ($contents as $value) {
             if ($value === '.' || $value === '..') {
                 continue;
             }
@@ -723,9 +723,9 @@ class FolderWatcherCommand extends Command
             $pid = getmypid();
         }
         $log_path = $this->logPath();
-        $fh = fopen($log_path, 'a+');
-        fwrite($fh, sprintf('[%s] <%s> %s', date('Y-m-d H:i:s'), $pid, $text)."\n");
-        fclose($fh);
+        $file_handle = fopen($log_path, 'a+');
+        fwrite($file_handle, sprintf('[%s] <%s> %s', date('Y-m-d H:i:s'), $pid, $text)."\n");
+        fclose($file_handle);
     }
 
     private function clearLog()
