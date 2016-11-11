@@ -3,6 +3,8 @@
 namespace Bluora\LaravelFolderWatcher;
 
 use Illuminate\Console\Command;
+use Symfony\Component\Yaml\Exception\ParseException;
+use Symfony\Component\Yaml\Yaml;
 
 class FolderWatcherCommand extends Command
 {
@@ -11,14 +13,21 @@ class FolderWatcherCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'watcher {action=} {option1=} {option2=}';
+    protected $signature = 'watcher
+                            {action? : The action to run: load, background, run, list, kill}
+                            {optional-value? : When running the help action, specify the action you need help on}
+                            {--config-file= : Specify a Yaml config file to load multiple watchers (background)}
+                            {--watch-path= : Specify a path to watch for file system changes (background,run)}
+                            {--binary= : Specify the binary that is called on a file system change (background,run)}
+                            {--script-arguments= : Specify the arguments to run against the binary that is called on a file system change (background,run)}
+                            {--pid= : Specify a process PID so we can kill it (kill)}';
 
     /**
      * The console command description.
      *
      * @var strings
      */
-    protected $description = 'Watch a folder. Run the given script.';
+    protected $description = 'Watch a folder. Run the given script over the file that changed.';
 
     /**
      * Notify instance.
@@ -56,15 +65,111 @@ class FolderWatcherCommand extends Command
     public function handle()
     {
         switch ($this->argument('action')) {
+            case 'help':
+                return;
+            case 'log':
+                if ($this->argument('optional-value') === 'clear') {
+                    return $this->clearLog();
+                }
+                $this->requireArguments($this->argument('action'), 'pid');
+                return $this->logForProcess($this->option('pid'));
+            case 'load':
+                $this->requireArguments($this->argument('action'), 'config-file');
+                return $this->loadFolderWatchers($this->option('config-file'));
             case 'background':
-                return $this->backgroundProcess($this->argument('option1'), $this->argument('option2'));
+                $this->requireArguments($this->argument('action'), 'watch-path', 'binary', 'script-arguments');
+                return $this->backgroundProcess($this->option('watch-path'), $this->option('binary'), $this->option('script-arguments'));
             case 'run':
-                return $this->runProcess($this->argument('option1'), $this->argument('option2'));
+                $this->requireArguments($this->argument('action'), 'watch-path', 'binary', 'script-arguments');
+                return $this->runProcess($this->option('watch-path'), $this->option('binary'), $this->option('script-arguments'));
             case 'list':
                 return $this->listProcesses();
             case 'kill':
-                return $this->killProcess($this->option('option1'));
+                $this->requireArguments($this->argument('action'), 'pid');
+                return $this->killProcess($this->option('pid'));
         }
+
+        $this->line('');
+        $this->error(sprintf('\'%s\' is not a valid action.', $this->argument('action')));
+        $this->line('');
+        $this->line('You can view the available actions by reviewing this commands help"');
+        $this->line('');
+        $this->line('   \'php artisan watcher --help\'');
+        $this->line('');
+    }
+
+    /**
+     * Check given options for action.
+     *
+     * @param  string $action
+     * @param  array  ...$options
+     *
+     * @return void
+     */
+    private function requireArguments($action, ...$options)
+    {
+        foreach ($options as $count => $name) {
+            if (empty($this->option($name))) {
+                $this->line('');
+                $this->error(sprintf('%s requires %s options. Missing value for %s.', ucfirst($action), count($options), $name));
+                $this->line('');
+                $this->line(sprintf('For example: `php artisan watcher %s %s`', $action, implode(' ', array_map(function($value) { return '--'.$value.'=x'; }, $options))));
+                $this->line('');
+                exit();
+            }
+        }
+    }
+
+    /**
+     * Load watchers from a file.
+     *
+     * @return int
+     */
+    private function loadFolderWatchers($config_file)
+    {
+        if (!file_exists($config_file_path = $config_file)) {
+            $config_file_path = base_path().'/'.$config_file;
+
+            if (!file_exists($config_file_path)) {
+                $this->line('');
+                $this->error(sprintf('Config file %s can not be found.', $config_file));
+                $this->line('');
+
+                return 1;
+            }
+        }
+
+        try {
+            $config = Yaml::parse(file_get_contents($config_file_path));
+        } catch (ParseException $e) {
+            $this->line('');
+            $this->error(sprintf('Unable to parse %s %s', $config_file, $e->getMessage()));
+            $this->line('');
+
+            return 1;
+        }
+
+        foreach ($config as $folder => $scripts) {
+            if (!file_exists($folder_path = $folder)) {
+                $folder_path = base_path().'/'.$folder;
+                if (!file_exists($config_file_path)) {
+                    $this->line('');
+                    $this->error(sprintf('Folder %s requested to watch does not exist.', $folder));
+                    $this->line('');
+
+                    return 1;
+                }
+            }
+
+            foreach ($scripts as $script) {
+                foreach ($script as $binary => $script_arguments) {
+                    $this->addLog(sprintf('Will watch \'%s\' and run \'%s %s\'', $folder_path, $binary, str_replace('%s', '<file-path>', $script_arguments)), getmypid());
+                    $this->backgroundProcess($folder_path, $binary, $script_arguments);
+                }
+            }            
+        }
+
+        return 0;
     }
 
     /**
@@ -75,14 +180,30 @@ class FolderWatcherCommand extends Command
      *
      * @return int
      */
-    private function backgroundProcess($directory_path, $command)
+    private function backgroundProcess($directory_path, $binary, $script_arguments)
     {
-        $op = [];
-        exec(sprintf('nohup php artisan files:watch %s %s > /dev/null 2>&1 & echo $!', $directory_path, $command), $op);
-        $pid = (int)$op[0];
-        $this->addWatch($pid, $directory_path, $command);
+        $this->cleanProcessList();
+        $data = $this->getProcessList();
+        $command_hash = hash('sha256', $binary.' '.$script_arguments);
 
-        return 0;
+        if (!isset($data[$command_hash])) {
+            $op = [];
+            exec($complete_command = sprintf('nohup php artisan watcher run --watch-path=%s --binary=%s --script-arguments="%s" > /dev/null 2>&1 & echo $!', $directory_path, $binary, $script_arguments, $command_hash), $op);
+            $pid = (int)$op[0];
+            $this->addLog($complete_command, $pid);
+
+            if ($pid > 0) {
+                $this->addProcess($pid, $directory_path, $binary, $script_arguments);
+                return 0;
+            }
+
+            $this->error('Failed to run this background process.');
+
+            return 0;
+        }
+        $this->error('Folder watch already exists.');
+
+        return 1;
     }
 
     /**
@@ -93,13 +214,15 @@ class FolderWatcherCommand extends Command
      *
      * @return int
      */
-    private function runProcess($directory_path, $command)
+    private function runProcess($directory_path, $binary, $script_arguments)
     {
         if (!function_exists('inotify_init')) {
-            static::console()->error('You need to install PECL inotify to be able to use files:watch.');
+            $this->error('You need to install PECL inotify to be able to use watcher.');
 
             return 1;
         }
+
+        $this->command = $binary.' '.$script_arguments;
 
         // Initialize an inotify instance.
         $this->watcher = inotify_init();
@@ -121,8 +244,74 @@ class FolderWatcherCommand extends Command
         $this->cleanProcessList();
         $data = $this->getProcessList();
 
-        foreach ($data as $pid => $process) {
-            $this->info(sprintf('[%s] %s - %s', $pid, $process[0], $process[1]));
+        $this->line('');
+
+        if (count($data)) {
+            $this->info('Listed below are the active folder watchers.');
+            $this->line('');
+
+            $headers = ['PID', 'Watching folder', 'Binary', 'Script arguments'];
+            $rows = [];
+
+            foreach ($data as $pid => $process) {
+                if (is_int($pid)) {
+                    $rows[] = [
+                        $pid,
+                        $process['directory_path'],
+                        $process['binary'],
+                        str_replace('%s', '[file-path]', $process['script_arguments'])
+                    ];
+                }
+            }
+
+            $this->table($headers, $rows);
+
+            $this->line('');
+            $this->line('You can view a processes log by running:');
+            $this->line('');
+            $this->line('   \'php artisan watcher log --pid=[<pid>]\'');
+            $this->line('');
+            $this->line('You can kill a specific or all processes by running the following:');
+            $this->line('');
+            $this->line('   \'php artisan watcher kill --pid=[<pid>|all]\'');
+            $this->line('');
+            return;
+        }
+
+        $this->line('No active folder watchers.');
+        $this->line('');
+    }
+
+    /**
+     * Log for a specific process.
+     *
+     * @param  int|string $pid
+     *
+     * @return void
+     */
+    private function logForProcess($pid)
+    {
+        $log_path = $this->logPath();
+        $size = 0;
+        while (true) {
+            clearstatcache();
+            $current_size = filesize($log_path);
+            if ($size == $current_size) {
+                usleep(10000);
+                continue;
+            }
+
+            $fh = fopen($log_path, 'r');
+            fseek($fh, $size);
+
+            while ($line = fgets($fh)) {
+                if ($pid === 'all' || stripos($line, '<'.$pid.'>') !== false) {
+                    $this->line(trim($line));
+                }
+            }
+
+            fclose($fh);
+            $size = $current_size;
         }
     }
 
@@ -137,10 +326,20 @@ class FolderWatcherCommand extends Command
     {
         $data = $this->getProcessList();
 
-        if (isset($data[$pid])) {
+        if ($pid === 'all') {
+            foreach ($data as $pid => $process) {
+                if (is_int($pid)) {
+                    $this->killProcess($pid);
+                }
+            }
+
+            return 0;
+        }
+
+        if (is_int($pid) && isset($data[$pid])) {
             unset($data[$pid]);
             $this->saveProcessList($data);
-            posix_kill($pid, SIGKILL);
+            posix_kill((int) $pid, SIGKILL);
 
             return 0;
         }
@@ -217,17 +416,17 @@ class FolderWatcherCommand extends Command
                         break;
                 }
 
-                continue;
+                return;
             }
 
             // Check file extension against the specified filter.
             $file_extension = pathinfo($file_path, PATHINFO_EXTENSION);
             if (isset($path_options['filter']) && $file_extension != '') {
                 if (count($path_options['filter_allowed']) && !in_array($file_extension, $path_options['filter_allowed'])) {
-                    continue;
+                    return;
                 }
                 if (count($path_options['filter_not_allowed']) && in_array('!'.$file_extension, $path_options['filter_not_allowed'])) {
-                    continue;
+                    return;
                 }
             }
 
@@ -252,6 +451,7 @@ class FolderWatcherCommand extends Command
      */
     private function runCommand($file_path)
     {
+        $this->addLog('Running: '.sprintf($this->command, $file_path));
         exec(sprintf($this->command, $file_path));
     }
 
@@ -265,7 +465,7 @@ class FolderWatcherCommand extends Command
      */
     private function addWatchPath($original_path, $options = false)
     {
-        static::console()->line('   Watching '.$original_path);
+        $this->addLog('Watching '.$original_path);
         $path = trim($original_path);
 
         if ($options === false) {
@@ -301,6 +501,59 @@ class FolderWatcherCommand extends Command
     }
 
     /**
+     * Parse options off a string.
+     *
+     * @return array
+     */
+    public static function parseOptions($input)
+    {
+        $input_array = explode('?', $input);
+        $string = $input_array[0];
+        $string_options = !empty($input_array[1]) ? $input_array[1] : '';
+        $options = [];
+        parse_str($string_options, $options);
+
+        return [$string, $options];
+    }
+
+    /**
+     * Scan recursively through each folder for all files and folders.
+     *
+     * @param string $scan_path
+     * @param bool   $include_folders
+     * @param bool   $include_files
+     * @param int    $depth
+     *
+     * @return void
+     */
+    public static function scan($scan_path, $include_folders = true, $include_files = true, $depth = -1)
+    {
+        $paths = [];
+
+        if (substr($scan_path, -1) != '/') {
+            $scan_path .= '/';
+        }
+
+        $contents = scandir($scan_path);
+
+        foreach ($contents as $key => $value) {
+            if ($value === '.' || $value === '..') {
+                continue;
+            }
+            $absolute_path = $scan_path.$value;
+            if (is_dir($absolute_path) && $depth != 0) {
+                $new_paths = self::scan($absolute_path.'/', $include_folders, $include_files, $depth - 1);
+                $paths = array_merge($paths, $new_paths);
+            }
+            if ((is_file($absolute_path) && $include_files) || (is_dir($absolute_path) && $include_folders)) {
+                $paths[] = $absolute_path;
+            }
+        }
+
+        return $paths;
+    }
+
+    /**
      * Remove path from watching.
      *
      * @param string $file_path
@@ -314,7 +567,7 @@ class FolderWatcherCommand extends Command
 
         // Remove the watch for this folder and remove from our tracking array.
         if ($watch_id !== false && isset($this->track_watches[$watch_id])) {
-            static::console()->line('   Removing watch for '.$this->track_watches[$watch_id]);
+            $this->line('   Removing watch for '.$this->track_watches[$watch_id]);
             try {
                 inotify_rm_watch($this->watcher, $watch_id);
             } catch (\Exception $exception) {
@@ -330,13 +583,13 @@ class FolderWatcherCommand extends Command
      * @return string
      */
     private function processListPath()
-    {        
+    {
         $xdg_runtime_dir = env('XDG_RUNTIME_DIR') ? env('XDG_RUNTIME_DIR') : '~/';
         $path = $xdg_runtime_dir.'/.active_folder_watcher.yml';
 
         // Create empty file.
         if (!file_exists($path)) {
-            yaml_emit_file($path, []);
+            file_put_contents($path, Yaml::dump([]));
         }
 
         return $path;
@@ -351,10 +604,15 @@ class FolderWatcherCommand extends Command
      *
      * @return void
      */
-    private function addProcess($pid, $directory_path, $command)
+    private function addProcess($pid, $directory_path, $binary, $script_arguments)
     {
         $data = $this->getProcessList();
-        $data[$pid] = [$directory_path, $command];
+        $data[$pid] = [
+            'directory_path'   => $directory_path,
+            'binary'           => $binary,
+            'script_arguments' => $script_arguments,
+        ];
+        $data[hash('sha256', $binary.' '.$script_arguments)] = $pid;
         $this->saveProcessList($data);
     }
 
@@ -367,9 +625,22 @@ class FolderWatcherCommand extends Command
     {
         $data = $this->getProcessList();
 
+        $sha_to_pid = [];
+
         foreach ($data as $pid => $process) {
-            if (!posix_kill($pid, 0)) {
-                unset($data[$pid]);
+            if (is_int($pid)) {
+                if (!posix_kill($pid, 0)) {
+                    unset($data[$pid]);
+                    $this->addLog('Process was dead', $pid);
+                }
+                continue;
+            }
+            $sha_to_pid[$process] = $pid;
+        }
+
+        foreach ($sha_to_pid as $pid => $sha) {
+            if (!isset($data[$pid])) {
+                unset($data[$sha]);
             }
         }
 
@@ -385,7 +656,14 @@ class FolderWatcherCommand extends Command
     {
         $process_list_path = $this->processListPath();
 
-        return yaml_parse_file($process_list_path);
+        // Parse the YAML config file.
+        try {
+            return Yaml::parse(file_get_contents($process_list_path));
+        } catch (ParseException $e) {
+            $this->error(sprintf('Unable to parse %s %s', $process_list_path, $e->getMessage()));
+
+            exit(1);
+        }
     }
 
     /**
@@ -398,6 +676,52 @@ class FolderWatcherCommand extends Command
     private function saveProcessList($data)
     {
         $process_list_path = $this->processListPath();
-        yaml_emit_file($process_list_path, $data);
+        file_put_contents($process_list_path, Yaml::dump($data));
+    }
+
+    /**
+     * Get the file path that we're using to store our process logs.
+     *
+     * @return string
+     */
+    private function logPath()
+    {
+        $xdg_runtime_dir = env('XDG_RUNTIME_DIR') ? env('XDG_RUNTIME_DIR') : '~/';
+        $log_path = $xdg_runtime_dir.'/.log_folder_watcher.yml';
+
+        // Create empty file.
+        if (!file_exists($log_path)) {
+            file_put_contents($log_path, '');
+        }
+
+        return $log_path;
+    }
+
+    /**
+     * Add text to the log.
+     *
+     * @param string $text
+     *
+     * @return void
+     */
+    private function addLog($text, $pid = false)
+    {
+        if ($pid === false) {
+            $pid = getmypid();
+        }
+        $log_path = $this->logPath();
+        $fh = fopen($log_path, 'a+');
+        fwrite($fh, sprintf('[%s] <%s> %s', date('Y-m-d H:i:s'), $pid, $text)."\n");
+        fclose($fh);
+    }
+
+    private function clearLog()
+    {
+        $log_path = $this->logPath();
+        file_put_contents($log_path, '');
+
+        $this->line('');
+        $this->info('Log file has been cleared.');
+        $this->line('');
     }
 }
