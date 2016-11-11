@@ -6,6 +6,9 @@ use Illuminate\Console\Command;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
+/**
+ * @SuppressWarnings(PHPMD.Design/WeightedMethodCount)
+ */
 class FolderWatcherCommand extends Command
 {
     /**
@@ -114,6 +117,8 @@ class FolderWatcherCommand extends Command
      * @param  array  ...$options
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.Design/ExitExpression)
      */
     private function requireArguments($action, ...$options)
     {
@@ -126,7 +131,7 @@ class FolderWatcherCommand extends Command
                     return '--'.$value.'=x';
                 }, $options))));
                 $this->line('');
-                exit();
+                exit(1);
             }
         }
     }
@@ -387,6 +392,9 @@ class FolderWatcherCommand extends Command
      * @param array $event_detail
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.Design/NpathComplexity)
      */
     private function processEvent($event_detail)
     {
@@ -475,6 +483,8 @@ class FolderWatcherCommand extends Command
      * @param bool|array $options
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CleanCode/BooleanArgumentFlag)
      */
     private function addWatchPath($original_path, $options = false)
     {
@@ -538,6 +548,9 @@ class FolderWatcherCommand extends Command
      * @param int    $depth
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CleanCode/BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public static function scan($scan_path, $include_folders = true, $include_files = true, $depth = -1)
     {
@@ -664,6 +677,8 @@ class FolderWatcherCommand extends Command
      * Get the list of processes from the file.
      *
      * @return array
+     *
+     * @SuppressWarnings(PHPMD.Design/ExitExpression)
      */
     private function getProcessList()
     {
@@ -714,12 +729,15 @@ class FolderWatcherCommand extends Command
      * Add text to the log.
      *
      * @param string $text
+     * @param int    $pid
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CleanCode/BooleanArgumentFlag)
      */
-    private function addLog($text, $pid = false)
+    private function addLog($text, $pid = 0)
     {
-        if ($pid === false) {
+        if ($pid === 0) {
             $pid = getmypid();
         }
         $log_path = $this->logPath();
