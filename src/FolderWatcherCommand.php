@@ -66,6 +66,9 @@ class FolderWatcherCommand extends Command
     {
         switch ($this->argument('action')) {
             case 'help':
+                $this->line('');
+                $this->line('Help per action not yet implemented.');
+                $this->line('');
                 return;
             case 'log':
                 if ($this->argument('optional-value') === 'clear') {
@@ -194,6 +197,7 @@ class FolderWatcherCommand extends Command
 
             if ($pid > 0) {
                 $this->addProcess($pid, $directory_path, $binary, $script_arguments);
+
                 return 0;
             }
 
@@ -362,7 +366,7 @@ class FolderWatcherCommand extends Command
             // One or many events occured.
             if ($events !== false && count($events)) {
                 foreach ($events as $event_detail) {
-                    $this->processEvent($events);
+                    $this->processEvent($event_detail);
                 }
             }
         }
@@ -371,11 +375,11 @@ class FolderWatcherCommand extends Command
     /**
      * Process the events that have occured.
      *
-     * @param array $events
+     * @param array $event_detail
      *
      * @return void
      */
-    private function processEvent($events)
+    private function processEvent($event_detail)
     {
         $is_dir = false;
 
@@ -389,7 +393,7 @@ class FolderWatcherCommand extends Command
 
         // This event is ignored, obviously.
         if ($event_detail['mask'] == IN_IGNORED) {
-            $this->removeWatchPath($event_detail['wd']);
+            return;
         }
 
         // This event refers to a path that exists.
