@@ -7,7 +7,7 @@ use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
 /**
- * @SuppressWarnings(PHPMD.WeightedMethodCount)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class FolderWatcherCommand extends Command
 {
@@ -394,7 +394,7 @@ class FolderWatcherCommand extends Command
      * @return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NpathComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function processEvent($event_detail)
     {
