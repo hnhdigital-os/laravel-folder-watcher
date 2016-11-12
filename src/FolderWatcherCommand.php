@@ -69,26 +69,32 @@ class FolderWatcherCommand extends Command
                 $this->line('');
                 $this->line('Help per action not yet implemented.');
                 $this->line('');
+
                 return;
             case 'log':
                 if ($this->argument('optional-value') === 'clear') {
                     return $this->clearLog();
                 }
                 $this->requireArguments($this->argument('action'), 'pid');
+
                 return $this->logForProcess($this->option('pid'));
             case 'load':
                 $this->requireArguments($this->argument('action'), 'config-file');
+
                 return $this->loadFolderWatchers($this->option('config-file'));
             case 'background':
                 $this->requireArguments($this->argument('action'), 'watch-path', 'binary', 'script-arguments');
+
                 return $this->backgroundProcess($this->option('watch-path'), $this->option('binary'), $this->option('script-arguments'));
             case 'run':
                 $this->requireArguments($this->argument('action'), 'watch-path', 'binary', 'script-arguments');
+
                 return $this->runProcess($this->option('watch-path'), $this->option('binary'), $this->option('script-arguments'));
             case 'list':
                 return $this->listProcesses();
             case 'kill':
                 $this->requireArguments($this->argument('action'), 'pid');
+
                 return $this->killProcess($this->option('pid'));
         }
 
@@ -104,7 +110,7 @@ class FolderWatcherCommand extends Command
     /**
      * Check given options for action.
      *
-     * @param  string $action
+     * @param string $action
      * @param  array  ...$options
      *
      * @return void
@@ -116,7 +122,9 @@ class FolderWatcherCommand extends Command
                 $this->line('');
                 $this->error(sprintf('%s requires %s options. Missing value for %s.', ucfirst($action), count($options), $name));
                 $this->line('');
-                $this->line(sprintf('For example: `php artisan watcher %s %s`', $action, implode(' ', array_map(function($value) { return '--'.$value.'=x'; }, $options))));
+                $this->line(sprintf('For example: `php artisan watcher %s %s`', $action, implode(' ', array_map(function ($value) {
+                    return '--'.$value.'=x';
+                }, $options))));
                 $this->line('');
                 exit();
             }
@@ -169,7 +177,7 @@ class FolderWatcherCommand extends Command
                     $this->addLog(sprintf('Will watch \'%s\' and run \'%s %s\'', $folder_path, $binary, str_replace('%s', '<file-path>', $script_arguments)), getmypid());
                     $this->backgroundProcess($folder_path, $binary, $script_arguments);
                 }
-            }            
+            }
         }
 
         return 0;
@@ -178,8 +186,8 @@ class FolderWatcherCommand extends Command
     /**
      * Run the process in the background.
      *
-     * @param  string $directory_path
-     * @param  string $command
+     * @param string $directory_path
+     * @param string $command
      *
      * @return int
      */
@@ -192,7 +200,7 @@ class FolderWatcherCommand extends Command
         if (!isset($data[$command_hash])) {
             $op = [];
             exec($complete_command = sprintf('nohup php artisan watcher run --watch-path=%s --binary=%s --script-arguments="%s" > /dev/null 2>&1 & echo $!', $directory_path, $binary, $script_arguments, $command_hash), $op);
-            $pid = (int)$op[0];
+            $pid = (int) $op[0];
             $this->addLog($complete_command, $pid);
 
             if ($pid > 0) {
@@ -213,8 +221,8 @@ class FolderWatcherCommand extends Command
     /**
      * Watch the provided folder and run the given command on files.
      *
-     * @param  string $directory_path
-     * @param  string $command
+     * @param string $directory_path
+     * @param string $command
      *
      * @return int
      */
@@ -263,7 +271,7 @@ class FolderWatcherCommand extends Command
                         $pid,
                         $process['directory_path'],
                         $process['binary'],
-                        str_replace('%s', '[file-path]', $process['script_arguments'])
+                        str_replace('%s', '[file-path]', $process['script_arguments']),
                     ];
                 }
             }
@@ -279,6 +287,7 @@ class FolderWatcherCommand extends Command
             $this->line('');
             $this->line('   \'php artisan watcher kill --pid=[<pid>|all]\'');
             $this->line('');
+
             return;
         }
 
@@ -289,7 +298,7 @@ class FolderWatcherCommand extends Command
     /**
      * Log for a specific process.
      *
-     * @param  int|string $pid
+     * @param int|string $pid
      *
      * @return void
      */
@@ -322,7 +331,7 @@ class FolderWatcherCommand extends Command
     /**
      * Kill a background process.
      *
-     * @param  int $pid
+     * @param int $pid
      *
      * @return int
      */
@@ -449,7 +458,7 @@ class FolderWatcherCommand extends Command
     /**
      * Run the given provided command.
      *
-     * @param  string $file_path
+     * @param string $file_path
      *
      * @return void
      */
@@ -462,8 +471,8 @@ class FolderWatcherCommand extends Command
     /**
      * Add a path to watch.
      *
-     * @param string        $path
-     * @param boolean|array $options
+     * @param string     $path
+     * @param bool|array $options
      *
      * @return void
      */
@@ -478,10 +487,10 @@ class FolderWatcherCommand extends Command
 
         if (isset($options['filter'])) {
             $options['filter'] = explode(',', $options['filter']);
-            $options['filter_allowed'] = array_filter($options['filter'], function($value) {
+            $options['filter_allowed'] = array_filter($options['filter'], function ($value) {
                 return substr($value, 0, 1) !== '!';
             });
-            $options['filter_not_allowed'] = array_filter($options['filter'], function($value) {
+            $options['filter_not_allowed'] = array_filter($options['filter'], function ($value) {
                 return substr($value, 0, 1) === '!';
             });
         }
@@ -673,7 +682,7 @@ class FolderWatcherCommand extends Command
     /**
      * Save the process to the file.
      *
-     * @param  array $data
+     * @param array $data
      *
      * @return void
      */
