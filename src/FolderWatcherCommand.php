@@ -83,8 +83,9 @@ class FolderWatcherCommand extends Command
                 return $this->logForProcess($this->option('pid'));
             case 'load':
                 $this->requireArguments($this->argument('action'), 'config-file');
+                $this->loadFolderWatchers($this->option('config-file'));
 
-                return $this->loadFolderWatchers($this->option('config-file'));
+                return $this->listProcesses();
             case 'background':
                 $this->requireArguments($this->argument('action'), 'watch-path', 'binary', 'script-arguments');
 
@@ -97,8 +98,9 @@ class FolderWatcherCommand extends Command
                 return $this->listProcesses();
             case 'kill':
                 $this->requireArguments($this->argument('action'), 'pid');
+                $this->killProcess($this->option('pid'));
 
-                return $this->killProcess($this->option('pid'));
+                return $this->listProcesses();
         }
 
         $this->line('');
@@ -243,6 +245,8 @@ class FolderWatcherCommand extends Command
 
         // Initialize an inotify instance.
         $this->watcher = inotify_init();
+
+        $this->root_path = $directory_path;
 
         // Add the given path.
         $this->addWatchPath($directory_path);
@@ -401,10 +405,16 @@ class FolderWatcherCommand extends Command
         $is_dir = false;
 
         // Directory events have a different hex, convert to the same number for a file event.
-        $hex = (string) dechex($event_detail['mask']);
-        if (substr($hex, 0, 1) == '4') {
-            $hex[0] = '0';
-            $event_detail['mask'] = hexdec((int) $hex);
+        $hex = $event_detail['mask'];
+        $dechex = (string) dechex($event_detail['mask']);
+
+        // Correctly apply for 40.
+        if ($dechex === '40') {
+            $event_detail['mask'] = IN_MOVED_FROM;
+        } elseif (substr($dechex, 0, 1) === '4') {
+            $this->addLog(sprintf('%s [%s]', $event_detail['name'], $dechex));
+            $dechex[0] = '0';
+            $event_detail['mask'] = hexdec((int) $dechex);
             $is_dir = true;
         }
 
@@ -418,6 +428,7 @@ class FolderWatcherCommand extends Command
             // File or folder path
             $file_path = $this->track_watches[$event_detail['wd']].'/'.$event_detail['name'];
             $path_options = $this->path_options[$event_detail['wd']];
+            $this->addLog(sprintf('%s event: [%s] %s', $is_dir ? 'Folder' : 'File', $event_detail['mask'], $file_path));
 
             if ($is_dir) {
                 switch ($event_detail['mask']) {
@@ -455,9 +466,11 @@ class FolderWatcherCommand extends Command
             switch ($event_detail['mask']) {
                 case IN_CLOSE_WRITE:
                 case IN_MOVED_TO:
+                    $this->runCommand($file_path);
+                    break;
                 case IN_MOVED_FROM:
                 case IN_DELETE:
-                    $this->runCommand($file_path);
+                    $this->runCommand($file_path, true);
                     break;
             }
         }
@@ -470,10 +483,11 @@ class FolderWatcherCommand extends Command
      *
      * @return void
      */
-    private function runCommand($file_path)
+    private function runCommand($file_path, $delete = false)
     {
-        $this->addLog('Running: '.sprintf($this->command, $file_path));
-        exec(sprintf($this->command, $file_path));
+        $command = sprintf($this->command.' --root-path=%s %s', '"'.$file_path.'"', '"'.$this->root_path.'"', $delete ? '--delete=1' : '');
+        $this->addLog('Running: '.$command);
+        exec($command);
     }
 
     /**
@@ -488,7 +502,6 @@ class FolderWatcherCommand extends Command
      */
     private function addWatchPath($original_path, $options = false)
     {
-        $this->addLog('Watching '.$original_path);
         $path = trim($original_path);
 
         if ($options === false) {
@@ -511,10 +524,13 @@ class FolderWatcherCommand extends Command
         $this->path_options[$watch_id] = $options;
 
         if (is_dir($path)) {
+            $this->addLog('Watching: '.$path);
+
             // Find and watch any children folders.
             $folders = $this->scan($path, true, false);
             foreach ($folders as $folder_path) {
-                if (file_exists($folder_path)) {
+                if (file_exists($path)) {
+                    $this->addLog('Watching: '.$folder_path);
                     $watch_id = inotify_add_watch($this->watcher, $folder_path, $this->watch_constants);
                     $this->track_watches[$watch_id] = $folder_path;
                     $this->path_options[$watch_id] = $options;
@@ -593,7 +609,7 @@ class FolderWatcherCommand extends Command
 
         // Remove the watch for this folder and remove from our tracking array.
         if ($watch_id !== false && isset($this->track_watches[$watch_id])) {
-            $this->line('   Removing watch for '.$this->track_watches[$watch_id]);
+            $this->addLog('Unwatching: '.$file_path);
             try {
                 inotify_rm_watch($this->watcher, $watch_id);
             } catch (\Exception $exception) {
