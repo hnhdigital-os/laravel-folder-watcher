@@ -730,7 +730,7 @@ class FolderWatcherCommand extends Command
     private function logPath()
     {
         $xdg_runtime_dir = env('XDG_RUNTIME_DIR') ? env('XDG_RUNTIME_DIR') : '~';
-        $log_path = $xdg_runtime_dir.'/.log_folder_watcher.yml';
+        $log_path = realpath($xdg_runtime_dir.'/.log_folder_watcher.yml');
 
         // Create empty file.
         if (!file_exists($log_path)) {
