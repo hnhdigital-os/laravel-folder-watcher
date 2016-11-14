@@ -771,7 +771,7 @@ class FolderWatcherCommand extends Command
     private function getWorkingDirectory($file_name)
     {
         $path = env('XDG_RUNTIME_DIR') ? env('XDG_RUNTIME_DIR') : $this->getUserHome();
-        $path = empty($path) ? $_SERVER['TMPDIR'] : $paths; 
+        $path = empty($path) ? $_SERVER['TMPDIR'] : $path; 
         $path .= '/'.$file_name;
 
         // Create empty file.
