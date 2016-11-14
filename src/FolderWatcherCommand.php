@@ -788,7 +788,7 @@ class FolderWatcherCommand extends Command
 
         // Windows home directory
         elseif (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
-            $home = rtrim($_SERVER['HOMEDRIVE'].$_SERVER['HOMEPATH'], '\\/')
+            $home = rtrim($_SERVER['HOMEDRIVE'].$_SERVER['HOMEPATH'], '\\/');
         }
 
         return empty($home) ? null : $home;
