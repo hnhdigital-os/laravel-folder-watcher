@@ -729,8 +729,9 @@ class FolderWatcherCommand extends Command
      */
     private function logPath()
     {
-        $xdg_runtime_dir = env('XDG_RUNTIME_DIR') ? env('XDG_RUNTIME_DIR') : '~';
-        $log_path = realpath($xdg_runtime_dir.'/.log_folder_watcher.yml');
+        $log_path = env('XDG_RUNTIME_DIR') ? env('XDG_RUNTIME_DIR') : $this->getUserHome();
+        $log_path = empty($log_path) ? $_SERVER['TMPDIR'] : $log_path; 
+        $log_path .= '/.log_folder_watcher.yml';
 
         // Create empty file.
         if (!file_exists($log_path)) {
@@ -738,6 +739,26 @@ class FolderWatcherCommand extends Command
         }
 
         return $log_path;
+    }
+
+    /**
+    * Return the user's home directory.
+    */
+    private function getUserHome()
+    {
+        // Linux home directory
+        $home = getenv('HOME');
+
+        if (!empty($home)) {
+            $home = rtrim($home, '/');
+        }
+
+        // Windows home directory
+        elseif (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
+            $home = rtrim($_SERVER['HOMEDRIVE'].$_SERVER['HOMEPATH'], '\\/')
+        }
+
+        return empty($home) ? null : $home;
     }
 
     /**
