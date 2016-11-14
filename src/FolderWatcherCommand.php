@@ -772,6 +772,8 @@ class FolderWatcherCommand extends Command
         if (!file_exists($path)) {
             file_put_contents($path, '');
         }
+
+        return $path;
     }
 
     /**
