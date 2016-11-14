@@ -412,7 +412,6 @@ class FolderWatcherCommand extends Command
         if ($dechex === '40') {
             $event_detail['mask'] = IN_MOVED_FROM;
         } elseif (substr($dechex, 0, 1) === '4') {
-            $this->addLog(sprintf('%s [%s]', $event_detail['name'], $dechex));
             $dechex[0] = '0';
             $event_detail['mask'] = hexdec((int) $dechex);
             $is_dir = true;
@@ -730,7 +729,7 @@ class FolderWatcherCommand extends Command
      */
     private function logPath()
     {
-        $xdg_runtime_dir = env('XDG_RUNTIME_DIR') ? env('XDG_RUNTIME_DIR') : '~/';
+        $xdg_runtime_dir = env('XDG_RUNTIME_DIR') ? env('XDG_RUNTIME_DIR') : '~';
         $log_path = $xdg_runtime_dir.'/.log_folder_watcher.yml';
 
         // Create empty file.
