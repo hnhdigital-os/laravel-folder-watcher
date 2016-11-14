@@ -625,15 +625,7 @@ class FolderWatcherCommand extends Command
      */
     private function processListPath()
     {
-        $xdg_runtime_dir = env('XDG_RUNTIME_DIR') ? env('XDG_RUNTIME_DIR') : '~/';
-        $path = $xdg_runtime_dir.'/.active_folder_watcher.yml';
-
-        // Create empty file.
-        if (!file_exists($path)) {
-            file_put_contents($path, Yaml::dump([]));
-        }
-
-        return $path;
+        return $this->getWorkingDirectory('.active_folder_watcher.yml');
     }
 
     /**
@@ -729,36 +721,7 @@ class FolderWatcherCommand extends Command
      */
     private function logPath()
     {
-        $log_path = env('XDG_RUNTIME_DIR') ? env('XDG_RUNTIME_DIR') : $this->getUserHome();
-        $log_path = empty($log_path) ? $_SERVER['TMPDIR'] : $log_path; 
-        $log_path .= '/.log_folder_watcher.yml';
-
-        // Create empty file.
-        if (!file_exists($log_path)) {
-            file_put_contents($log_path, '');
-        }
-
-        return $log_path;
-    }
-
-    /**
-    * Return the user's home directory.
-    */
-    private function getUserHome()
-    {
-        // Linux home directory
-        $home = getenv('HOME');
-
-        if (!empty($home)) {
-            $home = rtrim($home, '/');
-        }
-
-        // Windows home directory
-        elseif (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
-            $home = rtrim($_SERVER['HOMEDRIVE'].$_SERVER['HOMEPATH'], '\\/')
-        }
-
-        return empty($home) ? null : $home;
+        return $this->getWorkingDirectory('.log_folder_watcher.yml');
     }
 
     /**
@@ -790,5 +753,44 @@ class FolderWatcherCommand extends Command
         $this->line('');
         $this->info('Log file has been cleared.');
         $this->line('');
+    }
+
+    /**
+     * Get the working directory to save process and logs.
+     *
+     * @param string $file_name
+     *
+     * @return string
+     */
+    private function getWorkingDirectory($file_name)
+    {
+        $path = env('XDG_RUNTIME_DIR') ? env('XDG_RUNTIME_DIR') : $this->getUserHome();
+        $path = empty($path) ? $_SERVER['TMPDIR'] : $path; 
+        $path .= '/'.$file_name;
+
+        // Create empty file.
+        if (!file_exists($path)) {
+            file_put_contents($path, '');
+        }
+    }
+
+    /**
+     * Return the user's home directory.
+     */
+    private function getUserHome()
+    {
+        // Linux home directory
+        $home = getenv('HOME');
+
+        if (!empty($home)) {
+            $home = rtrim($home, '/');
+        }
+
+        // Windows home directory
+        elseif (!empty($_SERVER['HOMEDRIVE']) && !empty($_SERVER['HOMEPATH'])) {
+            $home = rtrim($_SERVER['HOMEDRIVE'].$_SERVER['HOMEPATH'], '\\/')
+        }
+
+        return empty($home) ? null : $home;
     }
 }
