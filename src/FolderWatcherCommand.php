@@ -693,7 +693,8 @@ class FolderWatcherCommand extends Command
 
         // Parse the YAML config file.
         try {
-            return Yaml::parse(file_get_contents($process_list_path));
+            $result = Yaml::parse(file_get_contents($process_list_path));
+            return is_array($result) ? $result : [];
         } catch (ParseException $e) {
             $this->error(sprintf('Unable to parse %s %s', $process_list_path, $e->getMessage()));
 
@@ -745,6 +746,11 @@ class FolderWatcherCommand extends Command
         fclose($file_handle);
     }
 
+    /**
+     * Clear the log.
+     *
+     * @return void
+     */
     private function clearLog()
     {
         $log_path = $this->logPath();
