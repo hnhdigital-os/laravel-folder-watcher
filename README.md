@@ -1,4 +1,4 @@
-# Laravel PHP-Elixir
+# Laravel Folder Watcher
 
 [![Latest Stable Version](https://poser.pugx.org/bluora/laravel-folder-watcher/v/stable.svg)](https://packagist.org/packages/bluora/laravel-folder-watcher) [![Total Downloads](https://poser.pugx.org/bluora/laravel-folder-watcher/downloads.svg)](https://packagist.org/packages/bluora/laravel-folder-watcher) [![Latest Unstable Version](https://poser.pugx.org/bluora/laravel-folder-watcher/v/unstable.svg)](https://packagist.org/packages/bluora/laravel-folder-watcher) [![License](https://poser.pugx.org/bluora/laravel-folder-watcher/license.svg)](https://packagist.org/packages/bluora/laravel-folder-watcher)
 
