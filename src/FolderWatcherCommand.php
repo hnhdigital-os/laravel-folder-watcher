@@ -484,7 +484,17 @@ class FolderWatcherCommand extends Command
      */
     private function runCommand($file_path, $delete = false)
     {
-        $command = sprintf($this->command.' --root-path=%s %s', '"'.$file_path.'"', '"'.$this->root_path.'"', $delete ? '--delete=1' : '');
+        $find_replace = [
+            'file-path' => $file_path,
+            'root-path' => $this->root_path,
+            'file-removed' => $delete ? 1 : 0,
+        ];
+
+        $find_values = array_map(function($key) { return '{{'.$key.'}}'; }, array_keys($find_replace));
+        $replace_values = array_values($find_replace);
+
+        $command = str_replace($find_values, $replace_values, $this->command);
+
         $this->addLog('Running: '.$command);
         exec($command);
     }
