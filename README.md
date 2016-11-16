@@ -27,3 +27,26 @@ Add it to your available console commands in app/Console/Kernel.php:
       \Bluora\LaravelFolderWatcher\FolderWatcherCommand::class,
     ];
 ```
+
+## Configuration
+
+###
+
+You can provide any yaml based file as input to this command using the --config-file optional argument.
+
+The yaml file is in the following format:
+
+```yaml
+[folder path]:
+    - [binary]: [arguments]
+```
+
+* [folder path]: The directory that will be watched for changes. The watcher recursively adds all child folders.
+* [binary]: The binary that we will run. This could be an absolute path or an alias. (eg php)
+* [arguments]: The arguments that need to be given to the binary. Use the placeholders below to allow the watcher to pass this through.
+
+### Command placeholders
+
+* {{file-path}}: The absolute file path to the changed file.
+* {{root-path}}: The base directory of the watcher.
+* {{file-removed}}: Boolean (1 or 0) to indicate if the file was deleted.
