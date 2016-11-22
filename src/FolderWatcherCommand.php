@@ -19,7 +19,7 @@ class FolderWatcherCommand extends Command
     protected $signature = 'watcher
                             {action? : The action to run: load, background, run, list, kill}
                             {optional-value? : When running the help action, specify the action you need help on}
-                            {--config-file= : Specify a Yaml config file to load multiple watchers (background)}
+                            {--config-file= : Specify a Yaml config file to load multiple watchers (load)}
                             {--watch-path= : Specify a path to watch for file system changes (background,run)}
                             {--binary= : Specify the binary that is called on a file system change (background,run)}
                             {--script-arguments= : Specify the arguments to run against the binary that is called on a file system change (background,run)}
@@ -485,12 +485,14 @@ class FolderWatcherCommand extends Command
     private function runCommand($file_path, $delete = false)
     {
         $find_replace = [
-            'file-path' => $file_path,
-            'root-path' => $this->root_path,
+            'file-path'    => $file_path,
+            'root-path'    => $this->root_path,
             'file-removed' => $delete ? 1 : 0,
         ];
 
-        $find_values = array_map(function($key) { return '{{'.$key.'}}'; }, array_keys($find_replace));
+        $find_values = array_map(function($key) {
+            return '{{'.$key.'}}';
+        }, array_keys($find_replace));
         $replace_values = array_values($find_replace);
 
         $command = str_replace($find_values, $replace_values, $this->command);
@@ -781,7 +783,7 @@ class FolderWatcherCommand extends Command
     private function getWorkingDirectory($file_name)
     {
         $path = env('XDG_RUNTIME_DIR') ? env('XDG_RUNTIME_DIR') : $this->getUserHome();
-        $path = empty($path) ? $_SERVER['TMPDIR'] : $path; 
+        $path = empty($path) ? $_SERVER['TMPDIR'] : $path;
         $path .= '/'.$file_name;
 
         // Create empty file.
