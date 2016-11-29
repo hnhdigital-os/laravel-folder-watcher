@@ -21,6 +21,7 @@
       <exclude>
         <directory suffix=".php">tests/</directory>
         <directory suffix=".php">vendor/</directory>
+        <file>src/ServiceProvider.php</file>
       </exclude>
     </whitelist>
   </filter>

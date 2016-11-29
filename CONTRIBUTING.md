@@ -2,7 +2,7 @@
 
 ## Coding Style
 
-PHP-Elixir follows the [PSR-2](http://www.php-fig.org/psr/2/) coding standard and the [PSR-4](http://www.php-fig.org/psr/4/) autoloading standard.
+This package follows the [PSR-2](http://www.php-fig.org/psr/2/) coding standard and the [PSR-4](http://www.php-fig.org/psr/4/) autoloading standard.
 
 ## PHPDoc
 
