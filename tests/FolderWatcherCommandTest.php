@@ -2,7 +2,6 @@
 
 namespace Bluora\LaravelFolderWatcher\Tests;
 
-use Bluora\LaravelFolderWatcher\FolderWatcherCommand;
 use PHPUnit\Framework\TestCase;
 
 class FolderWatcherCommandTest extends TestCase
