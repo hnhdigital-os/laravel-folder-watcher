@@ -116,7 +116,7 @@ class FolderWatcherCommand extends Command
      * Check given options for action.
      *
      * @param string $action
-     * @param  array  ...$options
+     * @param array  ...$options
      *
      * @return void
      *
@@ -490,7 +490,7 @@ class FolderWatcherCommand extends Command
             'file-removed' => $delete ? 1 : 0,
         ];
 
-        $find_values = array_map(function($key) {
+        $find_values = array_map(function ($key) {
             return '{{'.$key.'}}';
         }, array_keys($find_replace));
         $replace_values = array_values($find_replace);
@@ -621,6 +621,7 @@ class FolderWatcherCommand extends Command
         // Remove the watch for this folder and remove from our tracking array.
         if ($watch_id !== false && isset($this->track_watches[$watch_id])) {
             $this->addLog('Unwatching: '.$file_path);
+
             try {
                 inotify_rm_watch($this->watcher, $watch_id);
             } catch (\Exception $exception) {
@@ -706,6 +707,7 @@ class FolderWatcherCommand extends Command
         // Parse the YAML config file.
         try {
             $result = Yaml::parse(file_get_contents($process_list_path));
+
             return is_array($result) ? $result : [];
         } catch (ParseException $e) {
             $this->error(sprintf('Unable to parse %s %s', $process_list_path, $e->getMessage()));
