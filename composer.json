@@ -1,5 +1,5 @@
 {
-    "name": "bluora/laravel-folder-watcher",
+    "name": "hnhdigital-os/laravel-folder-watcher",
     "description": "Provides a Laravel console command that can watch a given folder, and any changes are passed to the provided command script.",
     "keywords": ["laravel", "folder", "watcher", "inotify", "command"],
     "license": "MIT",
