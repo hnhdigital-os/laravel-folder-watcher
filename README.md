@@ -1,14 +1,15 @@
 # Laravel Folder Watcher
 
-This package has been developed by H&H|Digital, an Australian botique developer. Visit us at [hnh.digital](http://hnh.digital).
+Provides a Laravel console command that can watch a given folder, and any changes are passed to the provided command script.
+
+Useful for running as a background task that initiates a virus scan on uploaded files.
+
+Checkout our standalone command line tool inspired by the work we did here. [github.com/hnhdigital-os/fs-watcher](https://github.com/hnhdigital-os/fs-watcher).
 
 [![Latest Stable Version](https://poser.pugx.org/hnhdigital-os/laravel-folder-watcher/v/stable.svg)](https://packagist.org/packages/hnhdigital-os/laravel-folder-watcher) [![Total Downloads](https://poser.pugx.org/hnhdigital-os/laravel-folder-watcher/downloads.svg)](https://packagist.org/packages/hnhdigital-os/laravel-folder-watcher) [![Latest Unstable Version](https://poser.pugx.org/hnhdigital-os/laravel-folder-watcher/v/unstable.svg)](https://packagist.org/packages/hnhdigital-os/laravel-folder-watcher) [![License](https://poser.pugx.org/hnhdigital-os/laravel-folder-watcher/license.svg)](https://packagist.org/packages/hnhdigital-os/laravel-folder-watcher)
 
 [![Build Status](https://travis-ci.org/hnhdigital-os/laravel-folder-watcher.svg?branch=master)](https://travis-ci.org/hnhdigital-os/laravel-folder-watcher) [![StyleCI](https://styleci.io/repos/73382984/shield?branch=master)](https://styleci.io/repos/73382984) [![Test Coverage](https://codeclimate.com/github/hnhdigital-os/laravel-folder-watcher/badges/coverage.svg)](https://codeclimate.com/github/hnhdigital-os/laravel-folder-watcher/coverage) [![Issue Count](https://codeclimate.com/github/hnhdigital-os/laravel-folder-watcher/badges/issue_count.svg)](https://codeclimate.com/github/hnhdigital-os/laravel-folder-watcher) [![Code Climate](https://codeclimate.com/github/hnhdigital-os/laravel-folder-watcher/badges/gpa.svg)](https://codeclimate.com/github/hnhdigital-os/laravel-folder-watcher)
-
-Provides a Laravel console command that can watch a given folder, and any changes are passed to the provided command script.
-
-Useful for running as a background task that initiates a virus scan on uploaded files.
+This package has been developed by H&H|Digital, an Australian botique developer. Visit us at [hnh.digital](http://hnh.digital).
 
 ## Install
 
